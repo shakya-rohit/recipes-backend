@@ -97,9 +97,10 @@ mvn spring-boot:run
 
 | Method | Endpoint | Description |
 |---------|-----------|-------------|
-| `POST` | `/api/recipes/load` | Loads recipes from external API and saves to H2 |
-| `GET` | `/api/recipes/search?query=` | Performs full-text search |
-| `GET` | `/api/recipes/{id}` | Fetch recipe by ID |
+| `POST` | `/api/recipes/load` | Loads recipes from the external API into the H2 database. |
+| `GET` | `/api/recipes/search?query=chicken` | Performs full-text search by recipe name or cuisine. |
+| `GET` | `/api/recipes/search-highlight?query=chicken` | Performs full-text search and returns highlighted matches for **name** and **cuisine** fields (`highlightedName`, `highlightedCuisine`). |
+| `GET` | `/api/recipes/{id}` | Retrieves complete details for a specific recipe by ID. |
 
 ---
 
@@ -150,5 +151,17 @@ POST /api/recipes/load
 ### Search recipes
 ```
 GET /api/recipes/search?query=pizza
-→ Returns list of matching recipes with highlights
+→ Returns list of matching recipes
+```
+
+### Search recipes with highlights
+```
+GET /api/recipes/search-highlight?query=pizza
+→ Returns list of matching recipes with highlighted name and cuisine
+```
+
+### Search recipes with highlights
+```
+GET /api/recipes/12
+→ Retrieves complete details for a specific recipe by ID.
 ```
