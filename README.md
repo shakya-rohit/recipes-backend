@@ -6,6 +6,45 @@ It exposes REST APIs to **load, search, and fetch recipe details** with Hibernat
 
 ---
 
+## 🖼️ API & Console Screenshots
+
+### 📦 Load Data from External API
+The application fetches data from an external recipes API and stores it in the embedded **H2 database**.
+
+![Load Data](./screenshots/api-load-data.png)
+
+---
+
+### 🔍 Search API with Highlighting
+Full-text search powered by **Hibernate Search + Lucene**, with support for fuzzy matching and highlighted keywords.
+
+![Search Highlight](./screenshots/api-search-highlight.png)
+
+---
+
+### 📗 Get Recipe by ID
+Retrieve a single recipe with complete details using the `/api/recipes/{id}` endpoint.
+
+![Get by ID](./screenshots/api-fetch-by-id.png)
+
+---
+
+### 🗄️ H2 Database Console
+View loaded recipes in the embedded in-memory H2 database.
+
+| H2 Console Login | Data Table |
+|------------------|-------------|
+| ![H2 Console 1](./screenshots/h2-console1.png) | ![H2 Console 2](./screenshots/h2-console2.png) |
+
+---
+
+### 📘 Swagger API Docs
+All endpoints are documented and testable via **Swagger UI**.
+
+![Swagger](./screenshots/swagger.png)
+
+---
+
 ## 🚀 Features
 
 - **Load recipes** from external API (`dummyjson.com`)

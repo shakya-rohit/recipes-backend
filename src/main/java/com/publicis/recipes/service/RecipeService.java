@@ -1,6 +1,7 @@
 package com.publicis.recipes.service;
 
 import com.publicis.recipes.dto.RecipeDTO;
+import com.publicis.recipes.exception.CustomException;
 import com.publicis.recipes.model.Recipe;
 import com.publicis.recipes.repository.RecipeRepository;
 
@@ -8,6 +9,7 @@ import io.github.resilience4j.retry.annotation.Retry;
 import jakarta.persistence.EntityManager;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -40,7 +42,7 @@ public class RecipeService {
     }
     
     @Retry(name = "recipes-api", fallbackMethod = "loadRecipesFallback")
-    public String loadRecipesFromExternal() {
+    public String loadRecipesFromExternal() throws CustomException {
         logger.info("Loading recipes from external API...");
 
         int skip = 0;
@@ -61,13 +63,13 @@ public class RecipeService {
         		response = restTemplate.getForObject(uri, Map.class);
         	} catch (Exception ex) {
         	    logger.error("Failed to fetch data from external API at skip={} : {}", skip, ex.getMessage());
-        	    break;
+        	    throw new CustomException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to fetch data from external API, Error: %s".formatted(ex.getLocalizedMessage()));
         	}
 
 
             if (response == null || !response.containsKey("recipes")) {
                 logger.warn("No valid response from external API. Stopping.");
-                break;
+                throw new CustomException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to fetch data from external API");
             }
 
             List<Map<String, Object>> recipes = (List<Map<String, Object>>) response.get("recipes");
@@ -124,46 +126,37 @@ public class RecipeService {
         return "Recipes loaded successfully: " + allRecipes.size();
     }
     
-    public String loadRecipesFallback(Exception ex) {
+    public String loadRecipesFallback(Throwable ex) {
         logger.error("Fallback triggered due to error: {}", ex.getMessage());
         return "Failed to load recipes. Please try again later.";
     }
 
-    public List<Recipe> searchRecipes(String query) {
+    public List<RecipeDTO> searchRecipes(String query) {
         logger.info("Performing full-text search for query: {}", query);
 
         SearchSession searchSession = Search.session(entityManager);
         
-        return searchSession.search(Recipe.class)
+        List<Recipe> recipes = searchSession.search(Recipe.class)
                 .where(f -> f.bool()
                         .should(f.match().field("name").matching(query).fuzzy(2))
                         .should(f.match().field("cuisine").matching(query).fuzzy(2))
                 )
                 .fetchHits(20);
+        
+        List<RecipeDTO> responseList = new ArrayList<>();
+        for(Recipe recipe: recipes) {
+        	RecipeDTO recipeDTO = new RecipeDTO(recipe);
+	        responseList.add(recipeDTO);
+        }
+        
+        return responseList;
     }
 
-    public RecipeDTO getById(Long id) {
+    public RecipeDTO getById(Long id) throws CustomException {
     	Recipe recipe = recipeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Recipe not found with id: " + id));
+                .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND, "Recipe not found with id: " + id));
     	
-    	RecipeDTO recipeDTO = new RecipeDTO();
-    	recipeDTO.setId(recipe.getId());
-    	recipeDTO.setName(recipe.getName());
-    	recipeDTO.setCuisine(recipe.getCuisine());
-    	recipeDTO.setImage(recipe.getImage());
-    	recipeDTO.setPrepTimeMinutes(recipe.getPrepTimeMinutes());
-    	recipeDTO.setCookTimeMinutes(recipe.getCookTimeMinutes());
-    	recipeDTO.setCaloriesPerServing(recipe.getCaloriesPerServing());
-    	recipeDTO.setServings(recipe.getServings());
-    	recipeDTO.setDifficulty(recipe.getDifficulty());
-    	recipeDTO.setRating(recipe.getRating());
-    	recipeDTO.setReviewCount(recipe.getReviewCount());
-//    	recipeDTO.setUserId(recipe.getUserId());
-    	recipeDTO.setIngredients(recipe.getIngredients());
-    	recipeDTO.setInstructions(recipe.getInstructions());
-    	recipeDTO.setTags(recipe.getTags());
-    	recipeDTO.setMealType(recipe.getMealType());
-    	
+    	RecipeDTO recipeDTO = new RecipeDTO(recipe);
     	return recipeDTO;
     }
 
@@ -184,8 +177,7 @@ public class RecipeService {
 	            )
 	            .highlighter("html", f -> f.unified())
 	            .fetchHits(20);
-
-	    // Transform the results to include highlighted fields
+	    
 	    List<RecipeDTO> responseList = new ArrayList<>();
 
 	    for (List<?> hit : result) {
@@ -193,24 +185,17 @@ public class RecipeService {
 	        List<String> nameHighlights = (List<String>) hit.get(1);
 	        List<String> cuisineHighlights = (List<String>) hit.get(2);
 
-	        RecipeDTO recipeTO = new RecipeDTO();
-	        recipeTO.setId(recipe.getId());
-	        recipeTO.setName(recipe.getName());
-	        recipeTO.setCuisine(recipe.getCuisine());
-	        recipeTO.setImage(recipe.getImage());
-	        recipeTO.setCaloriesPerServing(recipe.getPrepTimeMinutes());
-	        recipeTO.setCookTimeMinutes(recipe.getCookTimeMinutes());
-	        recipeTO.setCaloriesPerServing(recipe.getCaloriesPerServing());
+	        RecipeDTO recipeDTO = new RecipeDTO(recipe);
 
 	        // Include highlights (if found)
 	        if (nameHighlights != null && !nameHighlights.isEmpty()) {
-	            recipeTO.setHighlightedName(nameHighlights.get(0));
+	        	recipeDTO.setHighlightedName(nameHighlights.get(0));
 	        }
 	        if (cuisineHighlights != null && !cuisineHighlights.isEmpty()) {
-	            recipeTO.setHighlightedCuisine(cuisineHighlights.get(0));
+	        	recipeDTO.setHighlightedCuisine(cuisineHighlights.get(0));
 	        }
 
-	        responseList.add(recipeTO);
+	        responseList.add(recipeDTO);
 	    }
 
 	    logger.info("Found {} results for query '{}'", responseList.size(), query);

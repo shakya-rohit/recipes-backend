@@ -2,6 +2,8 @@ package com.publicis.recipes.dto;
 
 import java.util.List;
 
+import com.publicis.recipes.model.Recipe;
+
 public class RecipeDTO {
     private Long id;
     private String name;
@@ -20,6 +22,29 @@ public class RecipeDTO {
     private List<String> instructions;
     private List<String> tags;
     private List<String> mealType;
+    
+    public RecipeDTO() {
+    	
+    }
+    
+    public RecipeDTO(Recipe recipe) {
+        this.id = recipe.getId();
+        this.name = recipe.getName();
+        this.cuisine = recipe.getCuisine();
+        this.image = recipe.getImage();
+        this.prepTimeMinutes = recipe.getPrepTimeMinutes();
+        this.cookTimeMinutes = recipe.getCookTimeMinutes();
+        this.caloriesPerServing = recipe.getCaloriesPerServing();
+        this.servings = recipe.getServings();
+        this.difficulty = recipe.getDifficulty();
+        this.rating = recipe.getRating();
+        this.reviewCount = recipe.getReviewCount();
+        this.ingredients = recipe.getIngredients();
+        this.instructions = recipe.getInstructions();
+        this.tags = recipe.getTags();
+        this.mealType = recipe.getMealType();
+    }
+
     
 	public Long getId() {
 		return id;

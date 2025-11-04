@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.publicis.recipes.dto.RecipeDTO;
+import com.publicis.recipes.exception.CustomException;
 import com.publicis.recipes.model.Recipe;
 import com.publicis.recipes.service.RecipeService;
 
@@ -26,12 +27,12 @@ public class RecipeController {
     }
 
     @PostMapping("/load")
-    public String loadRecipes() {
+    public String loadRecipes() throws CustomException {
         return recipeService.loadRecipesFromExternal();
     }
 
     @GetMapping("/search")
-    public List<Recipe> searchRecipes(@RequestParam String query) {
+    public List<RecipeDTO> searchRecipes(@RequestParam String query) {
         return recipeService.searchRecipes(query);
     }
     
@@ -41,7 +42,7 @@ public class RecipeController {
     }
 
     @GetMapping("/{id}")
-    public RecipeDTO getById(@PathVariable Long id) {
+    public RecipeDTO getById(@PathVariable Long id) throws CustomException {
         return recipeService.getById(id);
     }
 }
